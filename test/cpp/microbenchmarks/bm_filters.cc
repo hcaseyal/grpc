@@ -186,6 +186,61 @@ BENCHMARK_TEMPLATE(BM_FullFilterFunctionality, HttpServerFilterBM);
 BENCHMARK_TEMPLATE(BM_FullFilterFunctionality, MessageSizeFilterBM);
 BENCHMARK_TEMPLATE(BM_FullFilterFunctionality, ServerLoadReportingFilterBM);
 
+// Measure full filter functionality overhead, but make sure to measure the fast
+// path; that is, no batch errors.
+template <class FilterBM>
+static void BM_FastPathFilterFunctionality(benchmark::State& state) {
+  // Setup for benchmark
+  FilterBM bm_setup;
+  struct DataForFilterBM data;
+  bm_setup.Setup(&data);
+
+  // Run the benchmark
+  while (state.KeepRunning()) {
+    GPR_TIMER_SCOPE("BenchmarkCycle", 0);
+    // Because it's not valid to send more than one of any of the {send, recv}_
+    // {initial, trailing}_metadata ops on a single call, we need to construct
+    // a new call stack each time through the loop. It's also not valid to have
+    // more than one of send_message or recv_message in flight on a single call
+    // at the same time.
+    memset(data.call_stack, 0, data.channel_stack->call_stack_size);
+    GRPC_ERROR_UNREF(grpc_call_stack_init(data.channel_stack, 1, DoNothing,
+                                          nullptr, &data.call_args));
+
+    struct PayloadData payload;
+    CreatePayloadForAllOps(&payload);
+
+    grpc_transport_stream_op_batch batch;
+    CreateBatchWithAllOps(&batch, &payload.payload);
+
+    // Add batch data that triggers fast path
+    batch.idx.named.method = GRPC_MDELEM_METHOD_GET;
+    batch.idx.named.te = GRPC_MDELEM_TE_TRAILERS;
+    batch.idx.named.scheme = GRPC_MDELEM_SCHEME_HTTPS;
+    batch.idx.named.content_type = GRPC_MDELEM_CONTENT_TYPE_APPLICATION_SLASH_GRPC;
+    batch.idx.named.path = GRPC_MDELEM_PATH_SLASH_INDEX_DOT_HTML;
+    batch.idx.named.authority = GRPC_MDELEM_AUTHORITY_EMPTY;
+
+    grpc_call_element* call_elem =
+        CALL_ELEMS_FROM_STACK(data.call_args.call_stack);
+    if (!data.filters.empty()) {
+      bm_setup.fixture.filter->start_transport_stream_op_batch(call_elem,
+                                                               &batch);
+    }
+
+    GRPC_CLOSURE_RUN(batch.on_complete, GRPC_ERROR_NONE);
+    GRPC_CLOSURE_RUN(
+        batch.payload->recv_initial_metadata.recv_initial_metadata_ready,
+        GRPC_ERROR_NONE);
+    GRPC_CLOSURE_RUN(batch.payload->recv_message.recv_message_ready,
+                     GRPC_ERROR_NONE);
+  }
+
+  grpc_call_final_info final_info;
+  grpc_call_stack_destroy(data.call_stack, &final_info, nullptr);
+
+  bm_setup.Destroy(&data, state);
+}
 // Some distros have RunSpecifiedBenchmarks under the benchmark namespace,
 // and others do not. This allows us to support both modes.
 namespace benchmark {
