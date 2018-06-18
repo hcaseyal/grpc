@@ -215,14 +215,14 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
 
     // Add batch data that triggers fast path
     grpc_linked_mdelem linked_mdelem_grpc_message;
-    linked_mdelem_grpc_message.md = GRPC_MDSTR_GRPC_MESSAGE;
+    linked_mdelem_grpc_message.md = GRPC_MDELEM_STATUS_200 ;
     batch.payload->send_trailing_metadata.send_trailing_metadata->idx.named.grpc_message =  &linked_mdelem_grpc_message;
     batch.payload->send_initial_metadata.send_initial_metadata->idx.named.grpc_message = &linked_mdelem_grpc_message;
 
     // Set the call data
     grpc_call_element* call_elem =
         CALL_ELEMS_FROM_STACK(data.call_args.call_stack);
-    call_data* calld = static_cast<call_data*>(call_elem->call_data);
+    struct http_server_call_data* calld = static_cast<struct http_server_call_data*>(call_elem->call_data);
     grpc_metadata_batch recv_initial_metadata_batch;
     calld->recv_initial_metadata = &recv_initial_metadata_batch;
     //method
@@ -266,6 +266,17 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
 
   bm_setup.Destroy(&data, state);
 }
+
+BENCHMARK_TEMPLATE(BM_FastPathFilterFunctionality, NoFilterBM);
+BENCHMARK_TEMPLATE(BM_FastPathFilterFunctionality, DummyFilterBM);
+BENCHMARK_TEMPLATE(BM_FastPathFilterFunctionality, CompressFilterBM);
+BENCHMARK_TEMPLATE(BM_FastPathFilterFunctionality, ClientDeadlineFilterBM);
+BENCHMARK_TEMPLATE(BM_FastPathFilterFunctionality, ServerDeadlineFilterBM);
+BENCHMARK_TEMPLATE(BM_FastPathFilterFunctionality, HttpClientFilterBM);
+BENCHMARK_TEMPLATE(BM_FastPathFilterFunctionality, HttpServerFilterBM);
+BENCHMARK_TEMPLATE(BM_FastPathFilterFunctionality, MessageSizeFilterBM);
+BENCHMARK_TEMPLATE(BM_FastPathFilterFunctionality, ServerLoadReportingFilterBM);
+
 // Some distros have RunSpecifiedBenchmarks under the benchmark namespace,
 // and others do not. This allows us to support both modes.
 namespace benchmark {
