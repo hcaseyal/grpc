@@ -245,6 +245,7 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
     grpc_linked_mdelem linked_mdelem_path;
     memset(&linked_mdelem_path, 0, sizeof(grpc_linked_mdelem));
     recv_initial_metadata_batch->idx.named.path = &linked_mdelem_path;
+    linked_mdelem_path.md = GRPC_MDELEM_PATH_SLASH;
     //authority
     grpc_linked_mdelem linked_mdelem_authority;
     memset(&linked_mdelem_authority, 0, sizeof(grpc_linked_mdelem));
