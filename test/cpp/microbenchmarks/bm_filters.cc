@@ -220,14 +220,34 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
     op->payload->send_trailing_metadata.send_trailing_metadata.idx.named.grpc_message =  &pct_encoded_msg;
     op->payload->send_initial_metadata.send_initial_metadata = &pct_encoded_msg;
 
+    // Set the call data
     grpc_call_element* call_elem =
         CALL_ELEMS_FROM_STACK(data.call_args.call_stack);
-
-    // For http_server filter incoming metadata
     grpc_metadata_batch recv_initial_metadata_batch;
     call_elem->call_data->recv_initial_metadata = &recv_initial_metadata_batch;
-    recv_initial_metadata_batch.idx.named.method = GRPC_MDELEM_METHOD_POST;
-    
+    //method
+    grpc_linked_mdelem linked_mdelem_method;
+    recv_initial_metadata_batch.idx.named.method = &linked_mdelem_method;
+    linked_mdelem_method.md = GRPC_MDELEM_METHOD_POST
+    //te
+    grpc_linked_mdelem linked_mdelem_te;
+    recv_initial_metadata_batch.idx.named.te = &linked_mdelem_te;
+    linked_mdelem_te.md = GRPC_MDELEM_TE_TRAILERS;
+    //scheme
+    grpc_linked_mdelem linked_mdelem_scheme;
+    recv_initial_metadata_batch.idx.named.scheme = &linked_mdelem_scheme;
+    linked_mdelem_scheme.md = GRPC_MDELEM_SCHEME_HTTPS;
+    //content_type
+    grpc_linked_mdelem linked_mdelem_content_type;
+    recv_initial_metadata_batch.idx.named.content_type = &linked_mdelem_content_type;
+    linked_mdelem_content_type.md = GRPC_MDELEM_CONTENT_TYPE_APPLICATION_SLASH_GRPC;
+    //path
+    grpc_linked_mdelem linked_mdelem_path;
+    recv_initial_metadata_batch.idx.named.path = &linked_mdelem_path;
+    //authority
+    grpc_linked_mdelem linked_mdelem_authority;
+    recv_initial_metadata_batch.idx.named.authority = &linked_mdelem_authority;
+
     if (!data.filters.empty()) {
       bm_setup.fixture.filter->start_transport_stream_op_batch(call_elem,
                                                                &batch);
