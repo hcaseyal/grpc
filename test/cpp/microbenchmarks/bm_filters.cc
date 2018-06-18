@@ -214,11 +214,10 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
     CreateBatchWithAllOps(&batch, &payload.payload);
 
     // Add batch data that triggers fast path
-    grpc_slice pct_encoded_msg = grpc_percent_encode_slice(
-        GRPC_MDVALUE(GRPC_MDSTR_GRPC_MESSAGE),
-        grpc_compatible_percent_encoding_unreserved_bytes);
-    op->payload->send_trailing_metadata.send_trailing_metadata.idx.named.grpc_message =  &pct_encoded_msg;
-    op->payload->send_initial_metadata.send_initial_metadata = &pct_encoded_msg;
+    grpc_linked_mdelem linked_mdelem_grpc_message;
+    linked_mdelem_grpc_message.md = GRPC_MDSTR_GRPC_MESSAGE;
+    batch.payload->send_trailing_metadata.send_trailing_metadata.idx.named.grpc_message =  &linked_mdelem_grpc_message;
+    batch.payload->send_initial_metadata.send_initial_metadata = &pct_encoded_msg;
 
     // Set the call data
     grpc_call_element* call_elem =
@@ -228,7 +227,7 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
     //method
     grpc_linked_mdelem linked_mdelem_method;
     recv_initial_metadata_batch.idx.named.method = &linked_mdelem_method;
-    linked_mdelem_method.md = GRPC_MDELEM_METHOD_POST
+    linked_mdelem_method.md = GRPC_MDELEM_METHOD_POST;
     //te
     grpc_linked_mdelem linked_mdelem_te;
     recv_initial_metadata_batch.idx.named.te = &linked_mdelem_te;
