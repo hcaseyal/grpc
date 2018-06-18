@@ -213,38 +213,9 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
     grpc_transport_stream_op_batch batch;
     CreateBatchWithAllOps(&batch, &payload.payload);
 
-    // Sets batch data such that the fast path for filter processing is taken
-    grpc_linked_mdelem grpc_message;
-    SetAndStoreLinkedMdelem(&grpc_message, GRPC_MDELEM_STATUS_200, 
-        &batch.payload->send_trailing_metadata.send_trailing_metadata->idx.named.grpc_message);
-    SetAndStoreLinkedMdelem(&grpc_message, GRPC_MDELEM_STATUS_200, 
-        &batch.payload->send_initial_metadata.send_initial_metadata->idx.named.grpc_message);
-
-    grpc_metadata_batch* recv_initial_metadata_batch = batch.payload->recv_initial_metadata.recv_initial_metadata;
-
-    grpc_linked_mdelem method;
-    SetAndStoreLinkedMdelem(&method, GRPC_MDELEM_METHOD_POST, 
-        &recv_initial_metadata_batch->idx.named.method);
-
-    grpc_linked_mdelem te;
-    SetAndStoreLinkedMdelem(&te, GRPC_MDELEM_TE_TRAILERS, 
-        &recv_initial_metadata_batch->idx.named.te);
-
-    grpc_linked_mdelem scheme;
-    SetAndStoreLinkedMdelem(&scheme, GRPC_MDELEM_SCHEME_HTTPS, 
-        &recv_initial_metadata_batch->idx.named.scheme);
-  
-    grpc_linked_mdelem content_type;
-    SetAndStoreLinkedMdelem(&content_type, GRPC_MDELEM_CONTENT_TYPE_APPLICATION_SLASH_GRPC, 
-        &recv_initial_metadata_batch->idx.named.content_type);
-
-    grpc_linked_mdelem path;
-    SetAndStoreLinkedMdelem(&path, GRPC_MDELEM_PATH_SLASH, 
-        &recv_initial_metadata_batch->idx.named.path);
-
-    grpc_linked_mdelem authority;
-    SetAndStoreLinkedMdelem(&authority, GRPC_MDELEM_AUTHORITY_EMPTY, 
-        &recv_initial_metadata_batch->idx.named.authority);
+    // Add appropriate data to trigger filter fast paths
+    FastPathData fast_path_data;
+    CreateFastPathDataAndAddToPayload(&fast_path_data, batch.payload);
 
     grpc_call_element* call_elem =
         CALL_ELEMS_FROM_STACK(data.call_args.call_stack);

@@ -370,10 +370,52 @@ void CreateBatchWithAllOps(grpc_transport_stream_op_batch* batch,
   batch->collect_stats = true;
 }
 
+// Contains data needed for exercising the fast paths of filters
+struct FastPathData {
+  grpc_linked_mdelem grpc_message;
+  grpc_linked_mdelem method;
+  grpc_linked_mdelem te;
+  grpc_linked_mdelem scheme;
+  grpc_linked_mdelem content_type;
+  grpc_linked_mdelem path;
+  grpc_linked_mdelem authority;
+};
+
 // Sets linked_mdelem's metadata field to value and sets the ptr in storage to
 // the linked_mdelem
 void SetAndStoreLinkedMdelem(grpc_linked_mdelem* linked_mdelem, grpc_mdelem value, grpc_linked_mdelem** storage) {
   memset(linked_mdelem, 0, sizeof(grpc_linked_mdelem));
   linked_mdelem->md = value;
   *storage =  linked_mdelem;
+}
+
+// Call this method to add the necessary data to trigger filter fast paths, 
+// rather than uncommon / slow paths.
+void CreateFastPathDataAndAddToPayload(struct FastPathData* data, 
+      grpc_transport_stream_op_batch_payload* payload) {
+
+  SetAndStoreLinkedMdelem(&data->grpc_message, GRPC_MDELEM_STATUS_200, 
+      &payload->send_trailing_metadata.send_trailing_metadata->idx.named.grpc_message);
+  SetAndStoreLinkedMdelem(&data->grpc_message, GRPC_MDELEM_STATUS_200, 
+      &payload->send_initial_metadata.send_initial_metadata->idx.named.grpc_message);
+
+  grpc_metadata_batch* recv_initial_metadata_batch = payload->recv_initial_metadata.recv_initial_metadata;
+
+  SetAndStoreLinkedMdelem(&data->method, GRPC_MDELEM_METHOD_POST, 
+      &recv_initial_metadata_batch->idx.named.method);
+
+  SetAndStoreLinkedMdelem(&data->te, GRPC_MDELEM_TE_TRAILERS, 
+      &recv_initial_metadata_batch->idx.named.te);
+
+  SetAndStoreLinkedMdelem(&data->scheme, GRPC_MDELEM_SCHEME_HTTPS, 
+      &recv_initial_metadata_batch->idx.named.scheme);
+
+  SetAndStoreLinkedMdelem(&data->content_type, GRPC_MDELEM_CONTENT_TYPE_APPLICATION_SLASH_GRPC, 
+      &recv_initial_metadata_batch->idx.named.content_type);
+
+  SetAndStoreLinkedMdelem(&data->path, GRPC_MDELEM_PATH_SLASH, 
+      &recv_initial_metadata_batch->idx.named.path);
+
+  SetAndStoreLinkedMdelem(&data->authority, GRPC_MDELEM_AUTHORITY_EMPTY, 
+      &recv_initial_metadata_batch->idx.named.authority);
 }
