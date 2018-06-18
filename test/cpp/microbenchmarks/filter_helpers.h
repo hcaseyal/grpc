@@ -369,3 +369,11 @@ void CreateBatchWithAllOps(grpc_transport_stream_op_batch* batch,
   batch->recv_trailing_metadata = true;
   batch->collect_stats = true;
 }
+
+// Sets linked_mdelem's metadata field to value and sets the ptr in storage to
+// the linked_mdelem
+void SetAndStoreLinkedMdelem(grpc_linked_mdelem* linked_mdelem, grpc_mdelem value, grpc_linked_mdelem** storage) {
+  memset(linked_mdelem, 0, sizeof(grpc_linked_mdelem));
+  linked_mdelem->md = value;
+  *storage =  linked_mdelem;
+}
