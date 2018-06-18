@@ -193,32 +193,6 @@ struct DataForFilterBM {
   grpc_call_element_args call_args;
 };
 
-struct http_server_call_data {
-  grpc_call_combiner* call_combiner;
-
-  // Outgoing headers to add to send_initial_metadata.
-  grpc_linked_mdelem status;
-  grpc_linked_mdelem content_type;
-
-  // If we see the recv_message contents in the GET query string, we
-  // store it here.
-  grpc_core::ManualConstructor<grpc_core::SliceBufferByteStream> read_stream;
-  bool have_read_stream;
-
-  // State for intercepting recv_initial_metadata.
-  grpc_closure recv_initial_metadata_ready;
-  grpc_closure* original_recv_initial_metadata_ready;
-  grpc_metadata_batch* recv_initial_metadata;
-  uint32_t* recv_initial_metadata_flags;
-  bool seen_recv_initial_metadata_ready;
-
-  // State for intercepting recv_message.
-  grpc_closure* original_recv_message_ready;
-  grpc_closure recv_message_ready;
-  grpc_core::OrphanablePtr<grpc_core::ByteStream>* recv_message;
-  bool seen_recv_message_ready;
-};
-
 template <class FilterFixture>
 class FilterBM {
  public:
