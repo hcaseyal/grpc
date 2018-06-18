@@ -214,15 +214,20 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
     CreateBatchWithAllOps(&batch, &payload.payload);
 
     // Add batch data that triggers fast path
-    batch.idx.named.method = GRPC_MDELEM_METHOD_GET;
-    batch.idx.named.te = GRPC_MDELEM_TE_TRAILERS;
-    batch.idx.named.scheme = GRPC_MDELEM_SCHEME_HTTPS;
-    batch.idx.named.content_type = GRPC_MDELEM_CONTENT_TYPE_APPLICATION_SLASH_GRPC;
-    batch.idx.named.path = GRPC_MDELEM_PATH_SLASH_INDEX_DOT_HTML;
-    batch.idx.named.authority = GRPC_MDELEM_AUTHORITY_EMPTY;
+    grpc_slice pct_encoded_msg = grpc_percent_encode_slice(
+        GRPC_MDVALUE(GRPC_MDSTR_GRPC_MESSAGE),
+        grpc_compatible_percent_encoding_unreserved_bytes);
+    op->payload->send_trailing_metadata.send_trailing_metadata.idx.named.grpc_message =  &pct_encoded_msg;
+    op->payload->send_initial_metadata.send_initial_metadata = &pct_encoded_msg;
 
     grpc_call_element* call_elem =
         CALL_ELEMS_FROM_STACK(data.call_args.call_stack);
+
+    // For http_server filter incoming metadata
+    grpc_metadata_batch recv_initial_metadata_batch;
+    call_elem->call_data->recv_initial_metadata = &recv_initial_metadata_batch;
+    recv_initial_metadata_batch.idx.named.method = GRPC_MDELEM_METHOD_POST;
+    
     if (!data.filters.empty()) {
       bm_setup.fixture.filter->start_transport_stream_op_batch(call_elem,
                                                                &batch);
