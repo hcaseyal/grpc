@@ -216,8 +216,8 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
     // Add batch data that triggers fast path
     grpc_linked_mdelem linked_mdelem_grpc_message;
     linked_mdelem_grpc_message.md = GRPC_MDSTR_GRPC_MESSAGE;
-    batch.payload->send_trailing_metadata.send_trailing_metadata.idx.named.grpc_message =  &linked_mdelem_grpc_message;
-    batch.payload->send_initial_metadata.send_initial_metadata = &pct_encoded_msg;
+    batch.payload->send_trailing_metadata.send_trailing_metadata->idx.named.grpc_message =  &linked_mdelem_grpc_message;
+    batch.payload->send_initial_metadata.send_initial_metadata->idx.named.grpc_message = &linked_mdelem_grpc_message;
 
     // Set the call data
     grpc_call_element* call_elem =
