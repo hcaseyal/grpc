@@ -222,8 +222,9 @@ static void BM_FastPathFilterFunctionality(benchmark::State& state) {
     // Set the call data
     grpc_call_element* call_elem =
         CALL_ELEMS_FROM_STACK(data.call_args.call_stack);
+    call_data* calld = static_cast<call_data*>(call_elem->call_data);
     grpc_metadata_batch recv_initial_metadata_batch;
-    call_elem->call_data->recv_initial_metadata = &recv_initial_metadata_batch;
+    calld->recv_initial_metadata = &recv_initial_metadata_batch;
     //method
     grpc_linked_mdelem linked_mdelem_method;
     recv_initial_metadata_batch.idx.named.method = &linked_mdelem_method;
