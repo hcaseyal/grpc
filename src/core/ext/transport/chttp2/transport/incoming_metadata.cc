@@ -30,6 +30,10 @@
 void grpc_chttp2_incoming_metadata_buffer_init(
     grpc_chttp2_incoming_metadata_buffer* buffer, gpr_arena* arena) {
   buffer->arena = arena;
+  buffer->preallocated_space_size = 9;
+  buffer->preallocated_space = (grpc_linked_mdelem*)gpr_arena_alloc(
+      buffer->arena,
+      sizeof(grpc_linked_mdelem) * buffer->preallocated_space_size);
   grpc_metadata_batch_init(&buffer->batch);
   buffer->batch.deadline = GRPC_MILLIS_INF_FUTURE;
 }
@@ -42,11 +46,15 @@ void grpc_chttp2_incoming_metadata_buffer_destroy(
 grpc_error* grpc_chttp2_incoming_metadata_buffer_add(
     grpc_chttp2_incoming_metadata_buffer* buffer, grpc_mdelem elem) {
   buffer->size += GRPC_MDELEM_LENGTH(elem);
-  return grpc_metadata_batch_add_tail(
-      &buffer->batch,
-      static_cast<grpc_linked_mdelem*>(
-          gpr_arena_alloc(buffer->arena, sizeof(grpc_linked_mdelem))),
-      elem);
+  grpc_linked_mdelem* md;
+  if (buffer->num_elems_allocated < buffer->preallocated_space_size) {
+    md = buffer->preallocated_space + buffer->num_elems_allocated;
+    buffer->num_elems_allocated++;
+  } else {
+    md =  static_cast<grpc_linked_mdelem*>(
+          gpr_arena_alloc(buffer->arena, sizeof(grpc_linked_mdelem)));
+  }
+  return grpc_metadata_batch_add_tail(&buffer->batch, md, elem);
 }
 
 grpc_error* grpc_chttp2_incoming_metadata_buffer_replace_or_add(

@@ -25,6 +25,11 @@
 
 typedef struct {
   gpr_arena* arena;
+  grpc_linked_mdelem* preallocated_space;  // Space for preallocated_space_size
+                                           // number of grpc_linked_mdelems
+  uint8_t preallocated_space_size;  // size in number of grpc_linked_mdelems
+  uint8_t num_elems_allocated;      // Number of elems allocated in the
+                                    // preallocated_space
   grpc_metadata_batch batch;
   size_t size;  // total size of metadata
 } grpc_chttp2_incoming_metadata_buffer;
