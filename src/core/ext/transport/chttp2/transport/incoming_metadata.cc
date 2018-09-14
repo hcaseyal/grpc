@@ -47,13 +47,12 @@ grpc_error* grpc_chttp2_incoming_metadata_buffer_add(
     grpc_chttp2_incoming_metadata_buffer* buffer, grpc_mdelem elem) {
   buffer->size += GRPC_MDELEM_LENGTH(elem);
   grpc_linked_mdelem* md;
-  if (buffer->num_elems_allocated < buffer->preallocated_space_size) {
-    md = buffer->preallocated_space + buffer->num_elems_allocated;
-    buffer->num_elems_allocated++;
-  } else {
-    md =  static_cast<grpc_linked_mdelem*>(
-          gpr_arena_alloc(buffer->arena, sizeof(grpc_linked_mdelem)));
-  }
+  //if (buffer->num_elems_allocated < buffer->preallocated_space_size) {
+    md = buffer->preallocated_space + buffer->num_elems_allocated++;
+  //} else {
+    //md =  static_cast<grpc_linked_mdelem*>(
+      //    gpr_arena_alloc(buffer->arena, sizeof(grpc_linked_mdelem)));
+  //}
   return grpc_metadata_batch_add_tail(&buffer->batch, md, elem);
 }
 
